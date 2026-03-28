@@ -152,5 +152,5 @@ code_length = gets.chomp
 puts "How many guess does the player get?"
 guesses = gets.chomp
 game = GameController.new(players, code_length, guesses)
-game.anwser
+game.awnser
 game.play
