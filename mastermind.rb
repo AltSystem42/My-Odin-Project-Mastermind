@@ -20,8 +20,8 @@ module Belt
 
   def show_board_with_selector(grid)
     display_grid = [
-      grid[0].map { |cell| cell[:display] },
-      grid[1]
+      grid.grid[0].map { |cell| cell[:display] },
+      grid.grid[1]
     ]
 
     display_grid.each_with_index do |row, r|
@@ -114,7 +114,7 @@ class GameController
     setup_selector
   end
 
-  def awnser
+  def answer 
     @code_length.times do
       color =
         if @controller == "pc"
@@ -125,7 +125,7 @@ class GameController
 
       break if color.nil?
 
-      @line.add_color(color, "awnser")
+      @line.add_color(color, "answer ")
     end
   end
 
@@ -152,5 +152,5 @@ code_length = gets.chomp
 puts "How many guess does the player get?"
 guesses = gets.chomp
 game = GameController.new(players, code_length, guesses)
-game.awnser
+game.answer 
 game.play
