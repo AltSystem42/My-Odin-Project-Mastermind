@@ -1,26 +1,33 @@
 require "colorize"
 require "io/console"
 
+# Belt is like a utility belt for display the game and handling player input
 module Belt
   def setup_selector
     @selector_row = 1
     @selector_col = 0
   end
+
   def selector(input, grid)
+    system("clear")
     case input
-    when "\e[A" then move_up(grid) # Up
-    when "\e[B" then move_down(grid) # Down
-    when "\e[C" then move_right(grid) # Right
-    when "\e[D" then move_left(grid) # Left
-    else
-      return nil
+    when "\e[A" then move_up(grid.grid) # Up
+    when "\e[B" then move_down(grid.grid) # Down
+    when "\e[C" then move_right(grid.grid) # Right
+    when "\e[D" then move_left(grid.grid) # Left
     end
   end
+
   def show_board_with_selector(grid)
-    grid.each_with_index do |row, r|
+    display_grid = [
+      grid[0].map { |cell| cell[:display] },
+      grid[1]
+    ]
+
+    display_grid.each_with_index do |row, r|
       line = row.each_with_index.map do |cell, c|
         if r == @selector_row && c == @selector_col
-          "^^"  
+          "^^"
         else
           cell
         end
@@ -28,6 +35,7 @@ module Belt
       puts line.join(" ")
     end
   end
+
   def read_input
     key = $stdin.getch
 
@@ -38,108 +46,106 @@ module Belt
 
     key
   end
+
   def move_up(grid)
-    return grid[0][@selector_col][:color].to_s
+    grid[0][@selector_col][:color].to_s
   end
 
-  def move_down(grid)
-    "q".to_s
+  def move_down(_grid)
+    "q"
   end
 
   def move_right(grid)
     @selector_col += 1 if @selector_col < grid[0].size - 1
   end
 
-  def move_left(grid)
-    @selector_col -= 1 if @selector_col > 0
+  def move_left(_grid)
+    @selector_col -= 1 if @selector_col.positive?
   end
 end
 
+# This is the data storage for where the order of colors go for either guess or solve
 class Order
   def initialize(colors)
     @order = []
     @guess_order = []
-    @grid = [colors.map do |color| { color: color, display: "  ".colorize(:background => color.to_sym)}      
+    @grid = [colors.map do |color|
+      { color: color, display: "  ".colorize(background: color.to_sym) }
     end,
              %w[__ __ __ __ __ __]]
   end
+
   def add_color(piece_color, line)
-    if line == "awnser"
-      @order.push(piece_color)
-    end
-    if line == "guess"
-      @guess_order.push(piece_color)
-    end
+    @order.push(piece_color) if line == "answer"
+    return unless line == "guess"
+
+    @guess_order.push(piece_color)
   end
+
   def get_color(position)
     @order[position]
   end
-  def get_order
+
+  def read_order
     @order
   end
-  def grid
-    @grid
-  end
+
+  attr_reader :grid
 end
 
-
-class Game_Controller
+# Main controller to start the game.
+class GameController
   include Belt
-  def initialize(playerCount, codeLength, guesses)
-    if playerCount == "1"
+
+  def initialize(playercount, codelength, guesses)
+    if playercount == "1"
       @player = "player"
       @controller = "pc"
-    elsif playerCount == "2"
+    elsif playercount == "2"
       @player = "playerTwo"
       @controller = "playerOne"
     else
       puts "This is only a 1-2 player game."
     end
-    @code_length = codeLength.to_i
+    @code_length = codelength.to_i
     @game_time = guesses.to_i
-    @colors = ["white", "black", "blue", "red", "green", "yellow"]
+    @colors = %w[white black blue red green yellow]
     @line = Order.new(@colors)
     setup_selector
   end
-  def get_awnser
+
+  def answer
     @code_length.times do
-    if @controller == "pc"
-        @line.add_color(@colors.sample, "awnser")
-    elsif @controller == "playerOne"
-        selected_color = nil
+      if @controller == "pc"
+        @line.add_color(@colors.sample, "answer")
+      elsif @controller == "playerOne"
         loop do
-          system("clear")
-          show_board_with_selector([
-            @line.grid[0].map { |cell| cell[:display] },
-            @line.grid[1]  
-          ])
-          input = read_input()
-          selected_color = selector(input, @line.grid)
+          show_board_with_selector(@line.grid)
+          selected_color = selector(read_input, @line)
           if selected_color == "q"
             puts "Player pressed down! Exiting loop..."
             break
           elsif @colors.any?(selected_color)
-            @line.add_color(selected_color, "awnser")
+            @line.add_color(selected_color, "answer")
             break
           end
         end
       end
     end
   end
+
   def play
     @game_time.times do
-        
     end
   end
 end
 
-
 puts "Welcome to mastermind. How many will be playing today?(1-2 player game)"
 players = gets.chomp
 puts "How long should the code be?"
-codeLength = gets.chomp
+code_length = gets.chomp
 puts "How many guess does the player get?"
 guesses = gets.chomp
-game = Game_Controller.new(players, codeLength, guesses)
-game.get_awnser
+game = GameController.new(players, code_length, guesses)
+game.answer
 game.play
