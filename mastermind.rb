@@ -8,9 +8,8 @@ module Belt
     @selector_col = 0
   end
 
-  def selector(input, grid, player)
+  def selector(input, grid)
     system("clear")
-    show_progress(grid.players, player)
     case input
     when "\e[A" then move_up(grid.grid) # Up
     when "\e[B" then move_down(grid.grid) # Down
@@ -65,21 +64,27 @@ module Belt
   def move_left(grid)
     @selector_col -= 1 if @selector_col.positive?
   end
-  def show_progress(players, player)
+  def show_progress(players, player, guesses)
     key = players[player]
     line = key[:queue]
-    print line.map {|color| "  ".colorize(:background => color.to_sym)}.join(" ")
-    puts
-    puts
+    if player == :player_one 
+      print line.map {|color| "  ".colorize(:background => color.to_sym)}.join(" ")
+      puts
+      puts  
+      else
+      print line[guesses].map {|color| "  ".colorize(:background => color.to_sym)}.join(" ")
+      puts
+      puts
+    end
   end
 end
 
 # This is the data storage for where the order of colors go for either guess or solve
 class Order
-  def initialize(colors)
+  def initialize(colors, guesses)
     @players = {
     player_one: {player: "player one", queue: []},
-    player_two: {player: "player two", queue: []}
+    player_two: {player: "player two", queue: Array.new(guesses, [])}
   }
     @grid = [colors.map do |color|
       { color: color, display: "  ".colorize(background: color.to_sym) }
@@ -87,11 +92,11 @@ class Order
              %w[__ __ __ __ __ __]]
   end
 
-  def add_color(piece_color, line)
+  def add_color(piece_color, line, key)
     @players[:player_one][:queue].push(piece_color) if line == "answer"
     return unless line == "guess"
 
-    @players[:player_two][:queue].push(piece_color)
+    @players[:player_two][:queue][key].push(piece_color)
   end
 
   def get_color(position)
@@ -114,9 +119,9 @@ class GameController
     @controller = if playercount == "2" then :player_one else "pc"
                   end
     @code_length = codelength.to_i
-    @game_time = guesses.to_i
+    @game_guesses = guesses.to_i
     @colors = %w[white black blue red green yellow]
-    @line = Order.new(@colors)
+    @line = Order.new(@colors, @game_guesses)
     setup_selector
   end
 
@@ -131,28 +136,36 @@ class GameController
 
       break if color.nil?
 
-      @line.add_color(color, "answer")
+      @line.add_color(color, "answer", 0)
     end
   end
 
-  def player_pick_color(player)
+  def player_pick_color(player, guess = 0)
     loop do
+      show_progress(@line.players, player, guess)
       show_board_with_selector(@line)
-      selected_color = selector(read_input, @line, player)
+      selected_color = selector(read_input, @line)
 
       return nil if selected_color == "q"
       return selected_color if @colors.include?(selected_color)
     end
   end
 
+  def rounds(code)
+    code.times do | key |
+          color = player_pick_color(@player, key)
+          break if color.nil?
+          @line.add_color(color, "guess", key)
+    end
+    compare_guess
+    
+  end
+
   def play
-    @game_time.times do
-      @code_length.times do
-        color = player_pick_color(@player)
-        break if color.nil?
-        @line.add_color(color, "guess")
-      end
-      show_right_and_wrongs
+    @game_guesses.times do
+      puts "#{@player} turn. Press Enter when ready."
+      gets.chomp
+      rounds(@code_length)
     end
   end
 end
