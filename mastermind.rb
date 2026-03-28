@@ -128,7 +128,7 @@ class GameController
       @line.add_color(color, "awnser")
     end
   end
-  
+
   def player_pick_color
     loop do
       show_board_with_selector(@line)
@@ -152,5 +152,5 @@ code_length = gets.chomp
 puts "How many guess does the player get?"
 guesses = gets.chomp
 game = GameController.new(players, code_length, guesses)
-game.answer
+game.anwser
 game.play
