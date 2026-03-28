@@ -114,23 +114,28 @@ class GameController
     setup_selector
   end
 
-  def answer
+  def awnser
     @code_length.times do
-      if @controller == "pc"
-        @line.add_color(@colors.sample, "answer")
-      elsif @controller == "playerOne"
-        loop do
-          show_board_with_selector(@line.grid)
-          selected_color = selector(read_input, @line)
-          if selected_color == "q"
-            puts "Player pressed down! Exiting loop..."
-            break
-          elsif @colors.any?(selected_color)
-            @line.add_color(selected_color, "answer")
-            break
-          end
+      color =
+        if @controller == "pc"
+          @colors.sample
+        else
+          player_pick_color
         end
-      end
+
+      break if color.nil?
+
+      @line.add_color(color, "awnser")
+    end
+  end
+  
+  def player_pick_color
+    loop do
+      show_board_with_selector(@line)
+      selected_color = selector(read_input, @line)
+
+      return nil if selected_color == "q"
+      return selected_color if @colors.include?(selected_color)
     end
   end
 
