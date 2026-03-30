@@ -127,7 +127,7 @@ module Logic
     feedback + Array.new(code_length - feedback.length, 0)
   end
 
-  def pc_guess(p, history, round)
+  def pc_guess(p, history, round, code_length)
     return [1,1,2,2] if round == 0
 
     last_guess = history[(round - 1) * 2][:pegs]
@@ -140,7 +140,12 @@ module Logic
     p = p.select do |code|
       simulate_feedback(code, last_guess).sort == last_feedback.sort
     end
-
+    if last_feedback == [0, 0, 0, 0] && round < 3
+      digits = [1,2,3,4,5,6]
+      zero_guessed = Array.new(code_length / 2, digits[(round * 2) % digits.length]) +
+                    Array.new(code_length / 2, digits[((round * 2) + 1) % digits.length])
+      return [zero_guessed, p]
+    end
     [p.first, p]
   end
 end
@@ -270,7 +275,7 @@ class Game
       possibilities = digits.repeated_permutation(@code_length).to_a
       until num == @max_guesses
         int = 0
-        line = pc_guess(possibilities, @history, num)
+        line = pc_guess(possibilities, @history, num, @code_length)
           if !(num == 0)
             guess = line[0]
             possibilities = line[1].clone
